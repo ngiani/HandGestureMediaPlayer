@@ -25,6 +25,8 @@ namespace HandGestureMediaPlayer
         int erosions, dilations;
 
         Point[] handContour;
+        Point[] stopContour;
+        Point[] playContour;
         Dictionary<int,List<Point[]>> trainingContours;
 
         bool enableClassification;
@@ -61,6 +63,33 @@ namespace HandGestureMediaPlayer
                 MessageBox.Show(exc.Message);
             }
 
+
+
+            CvBlobDetector blobDetector = new CvBlobDetector();
+
+
+            /*STOP CONTOUR*/
+
+            CvBlobs blobs = new CvBlobs();
+
+            Image<Gray, Byte> stopImg = new Image<Gray, byte>("gestures/stop.png");
+
+
+            blobDetector.Detect(stopImg, blobs);
+
+            stopContour = blobs[1].GetContour();
+
+
+            /*PLAY CONTOUR*/
+
+            blobs = new CvBlobs();
+
+            Image<Gray, Byte> playImg = new Image<Gray, byte>("gestures/play.png");
+
+
+            blobDetector.Detect(playImg, blobs);
+
+            playContour = blobs[1].GetContour();
 
         }
 
@@ -152,6 +181,7 @@ namespace HandGestureMediaPlayer
             }
         }
 
+
         private double contoursDistance(Point[] contour1, Point[] contour2)
         {
 
@@ -195,9 +225,13 @@ namespace HandGestureMediaPlayer
             captureCounter++;
 
 
+
+            //Get frame
+
             Mat frame = camera.QueryFrame();
 
            
+            //Process frame
 
             Image<Bgr, Byte> img = frame.ToImage<Bgr, Byte>();
 
@@ -210,6 +244,11 @@ namespace HandGestureMediaPlayer
 
             Image<Gray, Byte> dilated = eroded.Dilate(dilations);
 
+
+
+
+            //Detect largest blob
+
             CvBlobDetector blobDetector = new CvBlobDetector();
             CvBlobs blobs = new CvBlobs();
 
@@ -221,6 +260,8 @@ namespace HandGestureMediaPlayer
 
            foreach (CvBlob blob in blobs.Values)
             {
+
+                
                 if (blob.Area > maxBlobArea) {
                     maxBlobArea = blob.Area;
                     largestBlob = blob;
@@ -228,10 +269,26 @@ namespace HandGestureMediaPlayer
             }
 
 
+          
 
+            
+
+           
 
             if (largestBlob != null && largestBlob.Area >= 10000)
             {
+
+                //Detect center of blob
+                /*CvBlob.Moments m = largestBlob.BlobMoments;
+
+                PointF center = new PointF((float)(m.M10 / m.M00), (float)(m.M01 / m.M00));
+
+                img.Draw(new CircleF(center, 2.0f), new Bgr(0, 255, 0), 2);*/
+
+
+
+                //Get and draw convex hull and defects
+
                 handContour = largestBlob.GetContour();
 
                 VectorOfInt convexHullIndices = new VectorOfInt();
@@ -245,9 +302,10 @@ namespace HandGestureMediaPlayer
                 Mat defects = new Mat();
 
 
-                img.Draw(handContour, new Bgr(0, 0, 255));
-                img.Draw(convexHull.ToArray(), new Bgr(255, 0, 0), 2);
+                //img.Draw(handContour, new Bgr(0, 0, 255),3);
+                img.Draw(convexHull.ToArray(), new Bgr(255, 0, 0), 3);
 
+                img.ROI = new Rectangle(100, 100, 300, 300);
 
                 try
                 {
@@ -260,6 +318,7 @@ namespace HandGestureMediaPlayer
                     MessageBox.Show(exc.Message);
                 }
 
+
                 if (!defects.IsEmpty) { 
 
                     Matrix<int> defectsInt = new Matrix<int>(defects.Rows, defects.Cols, defects.NumberOfChannels);
@@ -267,7 +326,7 @@ namespace HandGestureMediaPlayer
                     defects.CopyTo(defectsInt);
 
 
-                    float sumOfDistances = 0;
+                    int countFingers = 0;
 
                     for (int i = 0; i < defectsInt.Rows; i++)
                     {
@@ -276,42 +335,58 @@ namespace HandGestureMediaPlayer
                         int farthestIdx = defectsInt.Data[i, 2];
                         float distance = defectsInt.Data[i, 3];
 
-                        sumOfDistances += distance;
 
-                        Point farthestPoint = handContour[farthestIdx];
-
-                        img.Draw(new CircleF(farthestPoint, 2.0f), new Bgr(0, 255, 0), -1);
-                    }
-
-                    float meanDistance = (sumOfDistances / defectsInt.Rows);
-
-                    if (meanDistance >= 5000)
-                    {
-                        label10.Text = "Pause";
-                        try {
-                            axWindowsMediaPlayer1.Ctlcontrols.pause();
-                        }
-
-                        catch (Exception exc)
+                        if (distance >= 15000)
                         {
-                            MessageBox.Show(exc.Message);
+
+                            //distances.Add(distance);
+
+                            Point startPoint = handContour[startIdx];
+                            Point endPoint = handContour[endIdx];
+                            Point farthestPoint = handContour[farthestIdx];
+
+                            img.Draw(new CircleF(startPoint, 2.0f), new Bgr(0, 255, 0), 2);
+                            img.Draw(new CircleF(endPoint, 2.0f), new Bgr(255, 0, 0), 2);
+                            img.Draw(new CircleF(farthestPoint, 2.0f), new Bgr(0, 0, 255), 2);
+
+
+                            CvInvoke.Line(img, startPoint, farthestPoint, new MCvScalar(255, 255, 0));
+                            countFingers++;
                         }
                     }
 
-                    if (meanDistance < 4000)
+                    
+                    //Approssimo conteggio dita, e classifico : 1 dito = play, 5 dita = pausa
+
+                    if (Math.Abs(countFingers - 1) < Math.Abs(countFingers - 5) 
+                        &&
+                        Math.Abs(countFingers - 1) < Math.Abs(countFingers - 2))
                     {
                         label10.Text = "Play";
-                        try
-                        {
-                            axWindowsMediaPlayer1.Ctlcontrols.play();
-                        }
+                        axWindowsMediaPlayer1.Ctlcontrols.play();
 
-                        catch (Exception exc)
-                        {
-                            MessageBox.Show(exc.Message);
-                        }
                     }
-              
+
+                    else if (Math.Abs(countFingers - 5) < Math.Abs(countFingers - 1) 
+                            &&
+                            Math.Abs(countFingers - 5) < Math.Abs(countFingers - 2))
+                    {
+                        label10.Text = "Pause";
+                        axWindowsMediaPlayer1.Ctlcontrols.pause();
+                    }
+
+                    else if (Math.Abs(countFingers - 2) < Math.Abs(countFingers - 1)
+                           &&
+                           Math.Abs(countFingers - 2) < Math.Abs(countFingers - 5))
+                    {
+                        label10.Text = "Volume Up";
+                        axWindowsMediaPlayer1.Ctlcontrols.pause();
+
+                        axWindowsMediaPlayer1.settings.volume++;
+                    }
+
+
+
 
                 }
 
