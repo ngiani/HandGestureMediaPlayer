@@ -25,9 +25,6 @@ namespace HandGestureMediaPlayer
         int erosions, dilations;
 
         Point[] handContour;
-        Point[] stopContour;
-        Point[] playContour;
-        Dictionary<int,List<Point[]>> trainingContours;
 
         bool enableClassification;
 
@@ -68,28 +65,6 @@ namespace HandGestureMediaPlayer
             CvBlobDetector blobDetector = new CvBlobDetector();
 
 
-            /*STOP CONTOUR*/
-
-            CvBlobs blobs = new CvBlobs();
-
-            Image<Gray, Byte> stopImg = new Image<Gray, byte>("gestures/stop.png");
-
-
-            blobDetector.Detect(stopImg, blobs);
-
-            stopContour = blobs[1].GetContour();
-
-
-            /*PLAY CONTOUR*/
-
-            blobs = new CvBlobs();
-
-            Image<Gray, Byte> playImg = new Image<Gray, byte>("gestures/play.png");
-
-
-            blobDetector.Detect(playImg, blobs);
-
-            playContour = blobs[1].GetContour();
 
         }
 
