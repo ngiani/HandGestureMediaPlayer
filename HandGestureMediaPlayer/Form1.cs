@@ -19,6 +19,7 @@ namespace HandGestureMediaPlayer
     {
 
         bool capturing;
+
         int minH, minS, minV;
         int maxH, maxS, maxV;
 
@@ -26,9 +27,6 @@ namespace HandGestureMediaPlayer
 
         Point[] handContour;
 
-        bool enableClassification;
-
-        int captureCounter;
 
         Capture camera;
 
@@ -41,13 +39,6 @@ namespace HandGestureMediaPlayer
             maxH = maxS = maxV = 0;
 
             erosions = dilations = 0;
-
-            enableClassification = false;
-
-            trainingContours = new Dictionary<int, List<Point[]>>();
-
-
-            captureCounter = 0;
 
 
             try
@@ -104,21 +95,6 @@ namespace HandGestureMediaPlayer
             label8.Text = dilations.ToString();
         }
 
-        private void button2_Click(object sender, EventArgs e)
-        {
-            if (!trainingContours.ContainsKey(0))
-                trainingContours.Add(0, new List<Point[]>());
-
-            trainingContours[0].Add(handContour);
-        }
-
-        private void button3_Click(object sender, EventArgs e)
-        {
-            if (!trainingContours.ContainsKey(1))
-                trainingContours.Add(1, new List<Point[]>());
-
-            trainingContours[1].Add(handContour);
-        }
 
         private void trackBar7_Scroll(object sender, EventArgs e)
         {
@@ -130,7 +106,7 @@ namespace HandGestureMediaPlayer
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            capturing = false;
+     
             
         }
 
@@ -145,7 +121,7 @@ namespace HandGestureMediaPlayer
                 if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
                     axWindowsMediaPlayer1.URL = (openFileDialog1.FileName);
 
-                    
+                    axWindowsMediaPlayer1.fullScreen = true;
                 }
             }
             catch (ArgumentException ex) {
@@ -157,47 +133,9 @@ namespace HandGestureMediaPlayer
         }
 
 
-        private double contoursDistance(Point[] contour1, Point[] contour2)
-        {
-
-            HausdorffDistanceExtractor HDExtractor = new HausdorffDistanceExtractor();
-
-
-            return HDExtractor.ComputeDistance(contour1, contour2);
-
-        }
-
-
-        private int NNContours(Dictionary<int,List<Point[]>> trainingSet, Point[] test)
-        {
-
-            int nearestLabel = 0;
-            double minDistance = 100000;
-
-            foreach (int key in trainingSet.Keys)
-            {
-                foreach (Point[] contour in trainingSet[key])
-                {
-                    double currentDistance = contoursDistance(contour, test);
-
-                    if (currentDistance < minDistance)
-                    {
-                        minDistance = currentDistance;
-                        nearestLabel = key;
-                    }
-                }
-            }
-
-
-            return nearestLabel;
-
-        }
-
-
         private void ProcessFrame(object sender, EventArgs args)
         {
 
-            captureCounter++;
 
 
 
@@ -209,6 +147,8 @@ namespace HandGestureMediaPlayer
             //Process frame
 
             Image<Bgr, Byte> img = frame.ToImage<Bgr, Byte>();
+
+            img.ROI = new Rectangle(100, 100, 300, 300);
 
             Image<Hsv, Byte> HSVimg = img.Convert<Hsv,Byte>();
 
@@ -280,7 +220,7 @@ namespace HandGestureMediaPlayer
                 //img.Draw(handContour, new Bgr(0, 0, 255),3);
                 img.Draw(convexHull.ToArray(), new Bgr(255, 0, 0), 3);
 
-                img.ROI = new Rectangle(100, 100, 300, 300);
+                
 
                 try
                 {
@@ -367,7 +307,7 @@ namespace HandGestureMediaPlayer
 
             }
 
-            pictureBox1.Image = img.Bitmap;
+            pictureBox1.Image = binary.Bitmap;
         }
 
 
