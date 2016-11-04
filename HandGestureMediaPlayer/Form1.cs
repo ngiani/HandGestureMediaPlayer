@@ -135,16 +135,10 @@ namespace HandGestureMediaPlayer
         private void ProcessFrame(object sender, EventArgs args)
         {
 
-
-
-
             //Get frame
-
             Mat frame = camera.QueryFrame();
-
            
             //Process frame
-
             Image<Bgr, Byte> img = frame.ToImage<Bgr, Byte>();
             img.ROI = new Rectangle(100, 100, 300, 300);
             Image<Hsv, Byte> HSVimg = img.Convert<Hsv,Byte>();
@@ -152,9 +146,7 @@ namespace HandGestureMediaPlayer
             Image<Gray, Byte> eroded = binary.Erode(erosions);
             Image<Gray, Byte> dilated = eroded.Dilate(dilations);
 
-
             //Detect largest blob
-
             CvBlobDetector blobDetector = new CvBlobDetector();
             CvBlobs blobs = new CvBlobs();
 
