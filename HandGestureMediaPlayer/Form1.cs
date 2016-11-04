@@ -35,7 +35,6 @@ namespace HandGestureMediaPlayer
             InitializeComponent();
 
             minH = minS  = minV = 0;
-
             maxH = maxS = maxV = 0;
 
             erosions = dilations = 0;
@@ -147,19 +146,11 @@ namespace HandGestureMediaPlayer
             //Process frame
 
             Image<Bgr, Byte> img = frame.ToImage<Bgr, Byte>();
-
             img.ROI = new Rectangle(100, 100, 300, 300);
-
             Image<Hsv, Byte> HSVimg = img.Convert<Hsv,Byte>();
-
-
             Image<Gray, Byte> binary = HSVimg.InRange(new Hsv(minH, minS, minV), new Hsv(maxH, maxS, maxV));
-
             Image<Gray, Byte> eroded = binary.Erode(erosions);
-
             Image<Gray, Byte> dilated = eroded.Dilate(dilations);
-
-
 
 
             //Detect largest blob
@@ -184,34 +175,16 @@ namespace HandGestureMediaPlayer
             }
 
 
-          
-
-            
-
-           
-
             if (largestBlob != null && largestBlob.Area >= 10000)
             {
 
-                //Detect center of blob
-                /*CvBlob.Moments m = largestBlob.BlobMoments;
-
-                PointF center = new PointF((float)(m.M10 / m.M00), (float)(m.M01 / m.M00));
-
-                img.Draw(new CircleF(center, 2.0f), new Bgr(0, 255, 0), 2);*/
-
-
-
-                //Get and draw convex hull and defects
 
                 handContour = largestBlob.GetContour();
-
+                
                 VectorOfInt convexHullIndices = new VectorOfInt();
-
                 VectorOfPoint convexHull = new VectorOfPoint();
 
                 CvInvoke.ConvexHull(new VectorOfPoint(handContour), convexHull);
-
                 CvInvoke.ConvexHull(new VectorOfPoint(handContour), convexHullIndices);
 
                 Mat defects = new Mat();
@@ -219,9 +192,7 @@ namespace HandGestureMediaPlayer
 
                 //img.Draw(handContour, new Bgr(0, 0, 255),3);
                 img.Draw(convexHull.ToArray(), new Bgr(255, 0, 0), 3);
-
                 
-
                 try
                 {
                     CvInvoke.ConvexityDefects(new VectorOfPoint(handContour), convexHullIndices, defects);
@@ -322,8 +293,6 @@ namespace HandGestureMediaPlayer
                 if (capturing == true)
                 {
 
-  
-
                     capturing = false;
                     button1.Text = "Start Capture";
                     Application.Idle -= ProcessFrame;
@@ -332,16 +301,11 @@ namespace HandGestureMediaPlayer
                 else
                 {
 
-
-
                     capturing = true;
                     button1.Text = "Stop Capture";
 
-           
-
                     Application.Idle += ProcessFrame;
                 }
-
 
             }
         }
@@ -349,7 +313,6 @@ namespace HandGestureMediaPlayer
         private void trackBar1_Scroll(object sender, EventArgs e)
         {
             minH = trackBar1.Value;
-
             label1.Text = minH.ToString();
         }
     }
